@@ -91,12 +91,9 @@ print_tagged_file(char *name, const char *tag)
 	*tmp = '\0';
 
 	snprintf(dir, sizeof(dir), "%s/%s/%s", tags_dir, tag, name);
-	char *ret = xrealpath(dir, tmp);
-	if (!ret)
-		return;
-
+	(void)xrealpath(dir, tmp);
 	if (!*tmp) {
-		printf(_("%s (error resolving link target)\n"), name);
+		xerror(_("tag: '%s': Error resolving link target\n"), name);
 		return;
 	}
 
@@ -280,6 +277,7 @@ struct tags_t {
 	struct tnames_t *files;
 	size_t count;
 	size_t cap;
+	int errors;
 };
 
 static void
@@ -344,11 +342,19 @@ append_files_in_tag(const char *tag, struct tags_t *tag_list, const int first)
 
 		*resolved = '\0';
 		(void)xrealpath(full_name, resolved);
-		if (!*resolved)
+		if (!*resolved) {
+			xerror(_("tag: Cannot resolve symbolic link '%s'\n"), full_name);
+			tag_list->errors++;
 			continue;
+		}
 
-		if (lstat(resolved, &a) == -1)
+		if (lstat(resolved, &a) == -1) {
+			char *abbr = abbreviate_file_name(resolved);
+			printf("%s%s%s\n", uf_c, abbr ? abbr : resolved, df_c);
+			if (abbr != resolved) free(abbr);
+			tag_list->errors++;
 			continue;
+		}
 
 		if (first == 1)
 			(void)append_to_tag_list(resolved, &a, tag_list);
@@ -357,6 +363,43 @@ append_files_in_tag(const char *tag, struct tags_t *tag_list, const int first)
 	}
 
 	closedir(dir);
+}
+
+static void
+print_tagged_files(struct tags_t *t, const size_t valid_tags)
+{
+	if (!t)
+		return;
+
+	for (size_t i = 0; i < t->count; i++) {
+		if (t->files[i].in_tags == valid_tags) {
+			char *abbr = abbreviate_file_name(t->files[i].name);
+			print_file_name(abbr ? abbr : t->files[i].name,
+				S_ISDIR(t->files[i].st.st_mode), &t->files[i].st);
+			if (abbr != t->files[i].name) free(abbr);
+		}
+		free(t->files[i].name);
+	}
+	free(t->files);
+}
+
+static int
+list_all_tags(void)
+{
+	const int pad = (int)get_longest_tag();
+
+	for (size_t i = 0; tags[i]; i++) {
+		char p[PATH_MAX + 1];
+		snprintf(p, sizeof(p), "%s/%s", tags_dir, tags[i]);
+		const filesn_t n = count_dir(p, NO_CPOP);
+		if (n > 2)
+			printf("%-*s [%s%jd%s]\n", pad, tags[i], mi_c,
+				(intmax_t)n - 2, df_c);
+		else
+			printf("%-*s  -\n", pad, tags[i]);
+	}
+
+	return FUNC_SUCCESS;
 }
 
 static int
@@ -369,20 +412,7 @@ list_tags(char **args)
 
 	if (!args || !args[0] || !args[1] || !args[2]) {
 		/* 'tag list': list all tags */
-		const int pad = (int)get_longest_tag();
-
-		for (size_t i = 0; tags[i]; i++) {
-			char p[PATH_MAX + 1];
-			snprintf(p, sizeof(p), "%s/%s", tags_dir, tags[i]);
-			const filesn_t n = count_dir(p, NO_CPOP);
-			if (n > 2)
-				printf("%-*s [%s%jd%s]\n", pad, tags[i], mi_c,
-					(intmax_t)n - 2, df_c);
-			else
-				printf("%-*s  -\n", pad, tags[i]);
-		}
-
-		return FUNC_SUCCESS;
+		return list_all_tags();
 	}
 
 	struct tags_t tag_list = {0};
@@ -416,13 +446,13 @@ list_tags(char **args)
 		}
 	}
 
-	if (tag_list.count > 0) { /* 'tag list TAG' */
-		for (size_t i = 0; i < tag_list.count; i++) {
-			if (tag_list.files[i].in_tags == valid_tags)
-				printf("%s\n", tag_list.files[i].name);
-			free(tag_list.files[i].name);
+	if (valid_tags > 0) { /* 'tag list TAG' */
+		if (tag_list.count > 0) {
+			print_tagged_files(&tag_list, valid_tags);
+		} else {
+			if (tag_list.errors == 0)
+				xerror(_("tag: No tagged files\n"));
 		}
-		free(tag_list.files);
 	}
 
 	return exit_status;

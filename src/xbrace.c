@@ -173,15 +173,15 @@ expand_brace_ranges(const char *prefix, const char *range, const char *suffix)
 	char **ranges = NULL;
 	size_t n = 0;
 
-	if (first > second) {
-		ranges = xnmalloc((size_t)(first - second + 2), sizeof(char *));
-		for (int i = first; i >= second; i -= step) {
+	if (first < second) {
+		ranges = xnmalloc((size_t)(second - first + 2), sizeof(char *));
+		for (int i = first; i <= second; i += step) {
 			const char *val = build_range_value(i, is_num_start, NULL);
 			ranges[n++] = join3(prefix, val, suffix);
 		}
-	} else if (first < second) {
-		ranges = xnmalloc((size_t)(second - first + 2), sizeof(char *));
-		for (int i = first; i <= second; i += step) {
+	} else if (first > second) {
+		ranges = xnmalloc((size_t)(first - second + 2), sizeof(char *));
+		for (int i = first; i >= second; i -= step) {
 			const char *val = build_range_value(i, is_num_start, NULL);
 			ranges[n++] = join3(prefix, val, suffix);
 		}
@@ -241,7 +241,6 @@ expand_recursive(const char *expression, brace_t *result)
 		if ((c == ',' && depth == 0) || c == '\0') {
 			const size_t part_len = i - part_start;
 			char *part = xnmalloc(part_len + 1, sizeof(char));
-
 			memcpy(part, inside + part_start, part_len);
 			part[part_len] = '\0';
 
