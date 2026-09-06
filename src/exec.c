@@ -2045,8 +2045,9 @@ exec_cmd(char **args)
 	/*     ################# TAGS ##################     */
 	else if (*args[0] == 't'
 	&& (((args[0][1] == 'a' || args[0][1] == 'd' || args[0][1] == 'l'
-	|| args[0][1] == 'm' || args[0][1] == 'n' || args[0][1] == 'u'
-	|| args[0][1] == 'y') && !args[0][2]) || strcmp(args[0], "tag") == 0))
+	|| args[0][1] == 'm' || args[0][1] == 'n' || args[0][1] == 'p'
+	|| args[0][1] == 'u' || args[0][1] == 'y') && !args[0][2])
+	|| strcmp(args[0], "tag") == 0))
 #ifndef _NO_TAGS
 		exit_code = tags_function(args);
 #else

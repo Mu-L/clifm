@@ -224,6 +224,7 @@ check_int_cmd_desc(const char *s, const size_t l)
 			if (s[1] == 'l') return TL_DESC;
 			if (s[1] == 'm') return TM_DESC;
 			if (s[1] == 'n') return TN_DESC;
+			if (s[1] == 'p') return TP_DESC;
 			if (s[1] == 'u') return TU_DESC;
 			if (s[1] == 'y') return TY_DESC;
 		}
@@ -2285,7 +2286,7 @@ rl_suggestions(const unsigned char c)
 			&& (printed = check_tags(word + 1, wlen - 1, TAGC_SUG)) != NO_MATCH)
 				goto SUCCESS;
 		} else {
-			if ((s[1] == 'l' || s[1] == 'm' || s[1] == 'n'
+			if ((s[1] == 'l' || s[1] == 'm' || s[1] == 'n' || s[1] == 'p'
 			|| s[1] == 'r' || s[1] == 'y') && s[2] == ' ') {
 				printed = check_tags(word, wlen, TAGS_SUG);
 				if (*word && printed != NO_MATCH)

@@ -1160,7 +1160,7 @@ options (ListDirsFirst, PrioritySortChar, ShowHiddenFiles)."
 
 #define TAG_USAGE "(Un)tag files and/or directories\n\n\
 \x1b[1mUSAGE\x1b[22m\n\
-  tag [add | del | list | list-full | merge | new | rename | untag]\n\
+  tag [add | del | list | list-full | merge | new | purge | rename | untag]\n\
       [FILE...] [[:]TAG]\n\n\
 Instead of the long format described above, you can use any of the\n\
 following shortcuts as well:\n\n\
@@ -1169,6 +1169,7 @@ following shortcuts as well:\n\n\
   tl: List tags/tagged files (same as 'tag list')\n\
   tm: Rename tag             (same as 'tag rename')\n\
   tn: Create new tag(s)      (same as 'tag new')\n\
+  tp: Purge invalid entries  (same as 'tag purge')\n\
   tu: Untag file(s)          (same as 'tag untag')\n\
   ty: Merge two tags         (same as 'tag merge')\n\n\
 \x1b[1mEXAMPLES\x1b[22m\n\
@@ -1199,7 +1200,11 @@ following shortcuts as well:\n\n\
 - Untag a few files from the 'work' tag\n\
     tag untag :work file1 image.png dir2\n\
   or\n\
-    tag untag :<TAB> (and then TAB again to select tagged files)\n\n\
+    tag untag :<TAB> (and then TAB again to select tagged files)\n\
+- Purge all tags from invalid entries\n\
+    tag purge\n\
+- Purge the tags 'work' and 'images' from invalid entries\n\
+    tag purge work images\n\n\
 Operating on tagged files (t:TAG)\n\
 - Print the file properties of all files tagged as 'docs'\n\
     p t:docs (or 'p t:<TAB>' to select from a list)\n\
@@ -1837,6 +1842,7 @@ For details about some specific command, use the '-h,--help' parameter: e.g.,\n\
 #define TL_DESC      " (list tags or tagged files)"
 #define TM_DESC      " (rename tags)"
 #define TN_DESC      " (create tags)"
+#define TP_DESC      " (purge tags from invalid entries)"
 #define TU_DESC      " (untag files)"
 #define TY_DESC      " (merge tags)"
 #define TRASH_DESC   " (trash files)"

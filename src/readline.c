@@ -2763,7 +2763,7 @@ fill_opts(const char *cmd_name, const char *word_start, const size_t w)
 		{"prompt", {"set", "list", "unset", "edit", "reload", NULL}},
 		{"pwd", {"-L", "-P", NULL}},
 		{"tag", {"add", "del", "list", "list-full", "merge", "new",
-			"rename", "untag", NULL}},
+			"purge", "rename", "untag", NULL}},
 		{"view", {"edit", "purge", NULL}},
 		{"net", {"mount", "unmount", "list", "edit", NULL}},
 		{"history", {"edit", "clear", "on", "off", "status",
@@ -2964,12 +2964,13 @@ tag_complete(const char *text, char *start)
 					comp = 2;
 			}
 			break;
-		case 'd': /* fallthough */
-		case 'l': /* fallthough */
-		case 'm': /* fallthough */
+		case 'd': /* fallthrough */
+		case 'l': /* fallthrough */
+		case 'm': /* fallthrough */
 //		case 'n': /* Just a new tag name: no completion */
+		case 'p': /* fallthrough */
 		case 'y':
-			if (l[1] == 'd' || l[1] == 'l') flags |= MULTI_SEL;
+			if (l[1] == 'd' || l[1] == 'l' || l[1] == 'p') flags |= MULTI_SEL;
 			comp = 1; cur_comp_type = TCMP_TAGS_S; break;
 		default: break;
 		}
@@ -2986,9 +2987,10 @@ tag_complete(const char *text, char *start)
 					comp = 2;
 			}
 		} else if (strncmp(p, "del ", 4) == 0 || strncmp(p, "list ", 5) == 0
-		/*|| strncmp(p, "new ", 4) == 0 */ || strncmp(p, "rename ", 7) == 0
+		|| strncmp(p, "purge ", 6) == 0 || strncmp(p, "rename ", 7) == 0
 		|| strncmp(p, "merge ", 6) == 0) {
-			if (*p == 'd' || *p == 'r' || *p == 'l') flags |= MULTI_SEL;
+			if (*p == 'd' || *p == 'r' || *p == 'l' || *p == 'p')
+				flags |= MULTI_SEL;
 			comp = 1; cur_comp_type = TCMP_TAGS_S;
 		} else {
 			if (text && *text == ':')

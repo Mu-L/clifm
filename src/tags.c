@@ -854,12 +854,112 @@ merge_tags(char **args)
 	return FUNC_SUCCESS;
 }
 
+#include "readline.h" // rl_get_y_or_n
+static int
+purge_invalid_entries(char ***entries, const size_t num)
+{
+	char msg[MAX_INT_STR + 32];
+	snprintf(msg, sizeof(msg), _("Purge %zu %s?"), num, FILE_STR(num));
+	const int yes = rl_get_y_or_n(msg, conf.default_answer.remove);
+	int status = FUNC_SUCCESS;
+	size_t success = 0;
+
+	for (size_t i = 0; (*entries)[i]; i++) {
+		if (yes == 0) {
+			free((*entries)[i]);
+			continue;
+		}
+
+		if (unlink((*entries)[i]) != 0) {
+			status = errno;
+			xerror(_("tag: Cannot unlink '%s': %s\n"),
+				(*entries)[i], strerror(errno));
+		} else {
+			success++;
+		}
+
+		free((*entries)[i]);
+	}
+
+	free(*entries);
+	*entries = NULL;
+
+	if (success > 0) {
+		print_reload_msg(SET_SUCCESS_PTR, xs_cb,
+			_("Purged %zu %s\n"), success, FILE_STR(success));
+	}
+
+	return status;
+}
+
+static int
+purge_tags(char **args)
+{
+	// If no parameter is passed, purge all tags.
+	char **p_tags = (args && args[0]) ? args : tags;
+	if (!p_tags)
+		return FUNC_FAILURE;
+
+	char buf[PATH_MAX + 1];
+	DIR *dir;
+	struct dirent *ent;
+	struct stat a;
+	char **bad_entries = NULL;
+	size_t bad_num = 0;
+
+	for (size_t i = 0; p_tags[i]; i++) {
+		char *p = strchr(p_tags[i], '\\');
+		char *tag = p ? unescape_str(p_tags[i]) : strdup(p_tags[i]);
+		if (!tag)
+			continue;
+
+		snprintf(buf, sizeof(buf), "%s/%s", tags_dir, tag);
+		dir = opendir(buf);
+		if (!dir) {
+			xerror("tag: '%s': %s\n", buf, strerror(errno));
+			free(tag);
+			continue;
+		}
+
+		while ((ent = readdir(dir)) != NULL) {
+			if (SELFORPARENT(ent->d_name))
+				continue;
+
+			snprintf(buf, sizeof(buf), "%s/%s/%s", tags_dir, tag, ent->d_name);
+#ifndef _DIRENT_HAVE_D_TYPE
+			const int ret = lstat(buf, &a);
+			if (ret == -1 || !S_ISLNK(a.st_mode))
+#else
+			if (ent->d_type != DT_LNK)
+#endif /* !_DIRENT_HAVE_D_TYPE */
+				continue;
+
+			if (stat(buf, &a) == 0 || errno != ENOENT)
+				continue;
+
+			printf("%s%s%s: %s%s%s\n", BOLD, tag, df_c, uf_c, ent->d_name, df_c);
+			bad_entries = xnrealloc(bad_entries, bad_num + 2, sizeof(char *));
+			bad_entries[bad_num++] = strdup(buf);
+			bad_entries[bad_num] = NULL;
+		}
+
+		closedir(dir);
+		free(tag);
+	}
+
+	if (bad_entries)
+		return purge_invalid_entries(&bad_entries, bad_num);
+
+	return FUNC_SUCCESS;
+}
+
 /* Perform the following expansions:
  * ta -> tag add
  * td -> tag del
  * tl -> tag list
  * tm -> tag rename
  * tn -> tag new
+ * tp -> tag purge
  * tu -> tag untag
  * ty -> tag merge
  * The first string in ARGS must always be one of the left values
@@ -879,6 +979,7 @@ reconstruct_input(char **args)
 	case 'l': a[1] = savestring("list", 4); c = 2; break;
 	case 'm': a[1] = savestring("rename", 6); c = 2; break;
 	case 'n': a[1] = savestring("new", 3); c = 2; break;
+	case 'p': a[1] = savestring("purge", 5); c = 2; break;
 	case 'u': a[1] = savestring("untag", 5); c = 2; break;
 	case 'y': a[1] = savestring("merge", 5); c = 2; break;
 	default:  a[1] = savestring("-h", 2); c = 2; break;
@@ -914,6 +1015,9 @@ is_tag_help(char **args)
 	if (strcmp(args[0], "tl") == 0)
 		return first_is_help;
 
+	if (!args[1] && *args[0] == 't' && args[0][1] == 'p')
+		return 0;
+
 	return (!args[1] || first_is_help || (args[2] && IS_HELP(args[2])));
 }
 
@@ -927,7 +1031,7 @@ tags_function(char **args)
 	if (is_tag_help(a))
 		{ puts(_(TAG_USAGE)); goto END; }
 
-	const char b[] = "adlmnuy";
+	const char b[] = "adlmnpuy";
 	if (strcmp(a[0], "tag") != 0 && strspn(a[0] + 1, b))
 		{ a = reconstruct_input(args); free_args = 1; }
 
@@ -945,6 +1049,9 @@ tags_function(char **args)
 
 	if (*a[1] == 'd' && strcmp(a[1], "del") == 0)
 		{ exit_status = remove_tags(a); goto END; }
+
+	if (*a[1] == 'p' && strcmp(a[1], "purge") == 0)
+		{ exit_status = purge_tags(a + 2); goto END; }
 
 	if (*a[1] == 'r' && strcmp(a[1], "rename") == 0)
 		{ exit_status = rename_tag(a); goto END; }
