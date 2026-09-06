@@ -1,4 +1,4 @@
-.TH "CLIFM" "1" "Sep 4, 2026" "clifm 1.28.18" "Clifm Manual"
+.TH "CLIFM" "1" "Sep 6, 2026" "clifm 1.28.19" "Clifm Manual"
 .SH NAME
 clifm - The Command-Line File Manager
 .SH SYNOPSIS
@@ -1318,7 +1318,7 @@ Since this trash system follows the Freedesktop specification, it is able to han
 .sp
 To restore trashed files (to their original location) see the \fBuntrash\fR command below.
 .TP
-.B tag \fR[add | del | list | list-full | new | merge | rename | untag] [\fIFILE\fR]... [[\fI:\fR]\fITAG\fR]
+.B tag \fR[add | del | list | list-full | new | merge | purge | rename | untag] [\fIFILE\fR]... [[\fI:\fR]\fITAG\fR]
 \fItag\fR is the main \fIEtiqueta\fR command, \fBclifm\fR's built-in file-tagging system.  See the \fBFILE TAGS\fR section for a complete description of this command.
 .TP
 .B te \fIFILE\fR...
@@ -2738,7 +2738,7 @@ Every time a new tag is created, a new directory named as the tag itself is crea
 .sp
 \fBtag\fR is the main \fBEtiqueta\fR command and is used to handle file tags.  Its syntax is as follows:
 
- tag [add, del, list, list-full, new, merge, rename, untag] [FILE]... [[:]TAG]
+ tag [add|del|list|list-full|new|merge|purge|rename|untag] [FILE]... [[:]TAG]
 
 \fBNote\fR: The \fB:TAG\fR notation is used for commands taking both file and tag names: `\fBtag add FILES(s) :TAG ...`, to tag files, and `\fBtag untag :TAG file1 file2\fR`, to untag files.  Otherwise, \fITAG\fR is used (without the leading colon).  For example: `\fBtag new docs\fR`, to create a new tag named \fBdocs\fR, or `\fBtag del png\fR`, to delete the tag named \fBpng\fR.
 .sp
@@ -2765,6 +2765,9 @@ T}	tag rename	Rename tags
 T{
 tn
 T}	tag new	Create new tag(s)
+T{
+tp
+T}	tag purge	Remove invalid entries from tags
 T{
 tu
 T}	tag untag	Untag file(s)
@@ -2818,6 +2821,12 @@ T}	tag del images	Remove the tag \fBimages\fR \fB(4)\fR
 T{
 tu :work file1 dir2
 T}	tag untag :work file1 dir2	Untag a few files from \fBwork\fR \fB(5)\fR
+T{
+tp
+T}	tag purge	Purge all tags from invalid entries
+T{
+tp work images
+T}	tag purge work images	Purge tags \fBwork\fR and \fBimages\fR from invalid entries
 .TE
 
 .sp
